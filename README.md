@@ -1,3 +1,87 @@
+# Estimation Project Writpup #
+
+ - [Step 1: Sensor Noise](#step-1-sensor-noise)
+ 
+ The simulator generated logs files will have the GPU and IMU measurement.
+ Here the calculation was for the calculation of standard deviation from the measurements.
+ 
+ This calculation can be done in many ways, one common ways is to use the `numpy.std` function to calculate the deviation, and then we need to update the 
+ `config/6_Sensornoise.txt` with computed values.
+ 
+Final output -
+
+```
+PASS: ABS(Quad.GPS.X-Quad.Pos.X) was less than MeasuredStdDev_GPSPosXY for 68% of the time
+PASS: ABS(Quad.IMU.AX-0.000000) was less than MeasuredStdDev_AccelXY for 68% of the time
+
+```
+ - [Step 2: Attitude Estimation](#step-2-attitude-estimation)
+ 
+ In this step, the task will be to improve the complementary filter-type attitude filter with a better rate gyro attitude integration scheme.
+ 
+ In `QuadEstimatorEKF.cpp`, the function `UpdateFromIMU()` contains a complementary filter-type attitude filter.  To reduce the errors in the estimated attitude (Euler Angles),it was needed to add a better rate gyro attitude integration scheme.  
+ By this way I am able to reduce the attitude errors to get within 0.1 rad for each of the Euler angles.
+ 
+
+Final output -
+
+```
+Simulation #12 (../config/07_AttitudeEstimation.txt)
+PASS: ABS(Quad.Est.E.MaxEuler) was less than 0.100000 for at least 3.000000 seconds
+
+```
+ 
+ - [Step 3: Prediction Step](#step-3-prediction-step)
+ 
+ This step is the prediction step for the filters.
+ In `QuadEstimatorEKF.cpp`, the implementation of the state prediction step in the `PredictState()` function is needed.  After running scenario `08_PredictState` We should see the estimator state track the actual state, with only reasonably slow drift.
+ 
+I have used alredy created an Attitude Quaternion from the current state. and 
+ `attitude.Rotate_BtoI(<V3F>)` to rotate a vector from body frame to inertial frame
+ 
+ - [Step 4: Magnetometer Update](#step-4-magnetometer-update)
+ 
+Task here is to add the information from the magnetometer to improve the filter's performance in estimating the vehicle's heading.
+
+Here the parameter `QYawStd` (`QuadEstimatorEKF.txt`) is tuned for the QuadEstimatorEKF so that it approximately captures the magnitude of the drift.
+Equations from `Magnetometer` is used here.
+
+Final output -
+
+```
+PASS: ABS(Quad.Est.E.Yaw) was less than 0.120000 for at least 10.000000 seconds
+PASS: ABS(Quad.Est.E.Yaw-0.000000) was less than Quad.Est.S.Yaw for 60% of the time
+
+
+```
+
+ - [Step 5: Closed Loop + GPS Update](#step-5-closed-loop--gps-update)
+ 
+ In this task, `UpdateFromGPS` function is implemented.
+ This is a simple implementation as shown below:
+ 
+ ```  
+ for (int i = 0; i < 6; i++)
+  {
+    zFromX(i) = ekfState(i);
+    hPrime(i, i) = 1;
+  }
+  
+  ```
+
+Final output -
+
+```
+
+PASS: ABS(Quad.Est.E.Pos) was less than 1.000000 for at least 20.000000 seconds
+
+```
+
+ 
+ - [Step 6: Adding Your Controller](#step-6-adding-your-controller)
+Controller added and updated from last project.
+
+
 # Estimation Project #
 
 Welcome to the estimation project.  In this project, you will be developing the estimation portion of the controller used in the CPP simulator.  By the end of the project, your simulated quad will be flying with your estimator and your custom controller (from the previous project)!
